@@ -4,8 +4,8 @@ pub mod kind;
 
 pub mod language;
 pub use language::Language;
-
 pub mod generator;
+pub use generator::{Generator, JavaGenerator, ObjectiveCGenerator};
 
 pub fn generate_code(source_code: &str, language: Language) {
     let mut parser = Parser::new();
@@ -20,14 +20,15 @@ pub fn generate_code(source_code: &str, language: Language) {
         eprintln!("The syntax declaration is missing from the source file");
         return;
     }
-    let generator = match language {
-        Language::ObjectiveC => generator::AnyGenerator::new(generator::ObjectiveCGenerator::new()),
-        Language::Java => generator::AnyGenerator::new(generator::JavaGenerator::new()),
+
+    let generator: Box<dyn Generator> = match language {
+        Language::ObjectiveC => Box::new(ObjectiveCGenerator::new()),
+        Language::Java => Box::new(JavaGenerator::new()),
     };
     visit_node(source_code, &tree.root_node(), &generator);
 }
 
-fn visit_node<G: generator::Generator>(source_code: &str, node: &Node, generator: &G) {
+fn visit_node(source_code: &str, node: &Node, generator: &Box<dyn Generator>) {
     match node.kind() {
         kind::IMPORT_DECLARATION => {
             println!("import pass");
