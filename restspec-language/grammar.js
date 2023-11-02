@@ -58,8 +58,6 @@ module.exports = grammar({
       token(
         choice(
           "Bool",
-          "Character",
-          "StaticString",
           "String",
           "Double",
           "Float",

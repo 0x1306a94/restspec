@@ -236,14 +236,6 @@
           },
           {
             "type": "STRING",
-            "value": "Character"
-          },
-          {
-            "type": "STRING",
-            "value": "StaticString"
-          },
-          {
-            "type": "STRING",
             "value": "String"
           },
           {

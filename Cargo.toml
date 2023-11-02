@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "restspec-language",
-    "restspec-parser",
+    "restspec-codegen",
     "restspec-cli",
 ]

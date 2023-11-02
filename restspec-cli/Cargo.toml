@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 tree-sitter = "~0.20.10"
-restspec-parser = { path = "../restspec-parser" }
+restspec-codegen = { path = "../restspec-codegen" }

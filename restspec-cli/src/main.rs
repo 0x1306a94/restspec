@@ -1,8 +1,9 @@
-use restspec_parser;
+use restspec_codegen;
 
 fn main() {
     let source_code = include_str!("../../samples/test.restspec");
-    restspec_parser::parse(source_code);
-
-    println!("kind: {}", restspec_parser::kind::SOURCE_FILE);
+    restspec_codegen::generate_code(
+        source_code,
+        restspec_codegen::language::Language::ObjectiveC,
+    );
 }
