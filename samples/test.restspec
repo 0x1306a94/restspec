@@ -1,0 +1,27 @@
+syntax = "restspec1";
+
+import "Basic";
+
+enum DownloadSource {
+    None = 0;
+    Apple = 0x2;
+}
+
+enum_option DownloadFlag {
+    None = 0;
+    Save = 1 << 1;
+}
+
+message Author {
+    String name;
+}
+
+message Download {
+    Author? author;
+    DownloadSource source;
+    DownloadFlag flag;
+    String name;
+    String url;
+    Int64? count;
+    Int createDate;
+}
