@@ -2,8 +2,8 @@ use super::generator::Generator;
 use tree_sitter::Node;
 
 use lazy_static::*;
+use std::cell::RefCell;
 use std::collections::HashMap;
-
 enum AssociationPolicy {
     Assign,
     RetainNonAtomic,
@@ -37,7 +37,7 @@ lazy_static! {
             "String".to_owned(),
             PropertyInfo(
                 "NSString *".to_owned(),
-                AssociationPolicy::RetainNonAtomic,
+                AssociationPolicy::CopyNonAtomic,
                 true,
             ),
         );
@@ -97,19 +97,19 @@ lazy_static! {
 struct CustomTypeInfo(AssociationPolicy, bool);
 
 pub struct ObjectiveCGenerator {
-    custom_type_map: HashMap<String, CustomTypeInfo>,
+    custom_type_map: RefCell<HashMap<String, CustomTypeInfo>>,
 }
 
 impl ObjectiveCGenerator {
     pub fn new() -> Self {
         ObjectiveCGenerator {
-            custom_type_map: HashMap::new(),
+            custom_type_map: RefCell::new(HashMap::new()),
         }
     }
 }
 
 impl Generator for ObjectiveCGenerator {
-    fn generate_enum_code(&mut self, source_code: &str, node: &Node) -> Result<String, String> {
+    fn generate_enum_code(&self, source_code: &str, node: &Node) -> Result<String, String> {
         let enum_name = node
             .child(1)
             .expect("Failed to get child node")
@@ -149,18 +149,14 @@ impl Generator for ObjectiveCGenerator {
         generated_code += "};\n\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", enum_name));
 
-        self.custom_type_map.insert(
+        self.custom_type_map.borrow_mut().insert(
             enum_name.to_string(),
             CustomTypeInfo(AssociationPolicy::Assign, false),
         );
         Ok(generated_code)
     }
 
-    fn generate_enum_options_code(
-        &mut self,
-        source_code: &str,
-        node: &Node,
-    ) -> Result<String, String> {
+    fn generate_enum_options_code(&self, source_code: &str, node: &Node) -> Result<String, String> {
         let enum_name = node
             .child(1)
             .expect("Failed to get child node")
@@ -218,7 +214,7 @@ impl Generator for ObjectiveCGenerator {
         generated_code += "};\n\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", enum_name));
 
-        self.custom_type_map.insert(
+        self.custom_type_map.borrow_mut().insert(
             enum_name.to_string(),
             CustomTypeInfo(AssociationPolicy::Assign, false),
         );
@@ -226,7 +222,7 @@ impl Generator for ObjectiveCGenerator {
         Ok(generated_code)
     }
 
-    fn generate_class_code(&mut self, source_code: &str, node: &Node) -> Result<String, String> {
+    fn generate_class_code(&self, source_code: &str, node: &Node) -> Result<String, String> {
         let class_name = node
             .child(1)
             .expect("Failed to get child node")
@@ -266,12 +262,8 @@ impl Generator for ObjectiveCGenerator {
                 match (*STANDARD_TYPE_MAP).get(type_name) {
                     Some(value) => {
                         let mut optional_code = String::new();
-                        if value.2 {
-                            if optional {
-                                optional_code.push_str(" ,nullable");
-                            } else {
-                                optional_code.push_str(" ,nonnull");
-                            }
+                        if value.2 && optional {
+                            optional_code.push_str(" ,nullable");
                         }
                         let blank = match value.1 {
                             AssociationPolicy::Assign => " ",
@@ -286,15 +278,11 @@ impl Generator for ObjectiveCGenerator {
                             field_name
                         ));
                     }
-                    None => match self.custom_type_map.get(type_name) {
+                    None => match self.custom_type_map.borrow().get(type_name) {
                         Some(value) => {
                             let mut optional_code = String::new();
-                            if value.1 {
-                                if optional {
-                                    optional_code.push_str(" ,nullable");
-                                } else {
-                                    optional_code.push_str(" ,nonnull");
-                                }
+                            if value.1 && optional {
+                                optional_code.push_str(" ,nullable");
                             }
 
                             let final_type = match value.0 {
@@ -321,7 +309,7 @@ impl Generator for ObjectiveCGenerator {
         generated_code += "@end\n\nNS_ASSUME_NONNULL_END\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", class_name));
 
-        self.custom_type_map.insert(
+        self.custom_type_map.borrow_mut().insert(
             class_name.to_string(),
             CustomTypeInfo(AssociationPolicy::RetainNonAtomic, true),
         );

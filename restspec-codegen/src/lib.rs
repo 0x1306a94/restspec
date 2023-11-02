@@ -20,16 +20,16 @@ pub fn generate_code(source_code: &str, language: Language) {
         eprintln!("The syntax declaration is missing from the source file");
         return;
     }
-    let mut generator: Box<dyn generator::Generator> = match language {
+    let generator: Box<dyn generator::Generator> = match language {
         Language::ObjectiveC => Box::new(generator::ObjectiveCGenerator::new()),
         _ => {
             panic!("pass");
         }
     };
-    visit_node(source_code, &tree.root_node(), &mut generator);
+    visit_node(source_code, &tree.root_node(), &generator);
 }
 
-fn visit_node(source_code: &str, node: &Node, generator: &mut Box<dyn generator::Generator>) {
+fn visit_node(source_code: &str, node: &Node, generator: &Box<dyn generator::Generator>) {
     match node.kind() {
         kind::IMPORT_DECLARATION => {
             println!("import pass");
