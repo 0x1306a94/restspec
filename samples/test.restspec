@@ -17,6 +17,7 @@ enum_option DownloadFlag {
 
 message Author {
     String name;
+    Map info;
 }
 
 message Download {

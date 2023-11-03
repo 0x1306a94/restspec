@@ -66,19 +66,19 @@ fn visit_node(
             let code = generator
                 .generate_enum_code(source_code, node, option_cache)
                 .expect("fail generate_enum_code");
-            println!("enum code: \n\n{}", code);
+            println!("enum code: \n{}", code[0].get_code());
         }
         kind::ENUM_OPTION_DECLARATION => {
             let code = generator
                 .generate_enum_options_code(source_code, node, option_cache)
                 .expect("fail generate_enum_code");
-            println!("eunm options code: \n\n{}", code);
+            println!("eunm options code: \n{}", code[0].get_code());
         }
         kind::MESSAGE_DECLARATION => {
             let code = generator
                 .generate_class_code(source_code, node, option_cache)
                 .expect("fail generate_enum_code");
-            println!("class code: \n\n{}", code);
+            println!("class code: \n{}", code[0].get_code());
         }
         kind::ERROR => {
             panic!(

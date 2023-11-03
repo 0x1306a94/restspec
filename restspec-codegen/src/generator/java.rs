@@ -1,4 +1,4 @@
-use super::generator::Generator;
+use super::generator::{GeneratedCode, Generator};
 use crate::option;
 use tree_sitter::Node;
 
@@ -16,7 +16,7 @@ impl Generator for JavaGenerator {
         source_code: &str,
         node: &Node,
         option_cache: &option::cache::Cache,
-    ) -> Result<String, String> {
+    ) -> Result<Vec<GeneratedCode>, String> {
         todo!()
     }
 
@@ -25,7 +25,7 @@ impl Generator for JavaGenerator {
         source_code: &str,
         node: &Node,
         option_cache: &option::cache::Cache,
-    ) -> Result<String, String> {
+    ) -> Result<Vec<GeneratedCode>, String> {
         todo!()
     }
 
@@ -34,7 +34,7 @@ impl Generator for JavaGenerator {
         source_code: &str,
         node: &Node,
         option_cache: &option::cache::Cache,
-    ) -> Result<String, String> {
+    ) -> Result<Vec<GeneratedCode>, String> {
         todo!()
     }
 }

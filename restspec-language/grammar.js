@@ -91,7 +91,9 @@ module.exports = grammar({
           "Int",
           "UInt",
           ...[8, 16, 32, 64].map((n) => `UInt${n}`),
-          ...[8, 16, 32, 64].map((n) => `Int${n}`)
+          ...[8, 16, 32, 64].map((n) => `Int${n}`),
+          "Map",
+          "Array"
         )
       ),
     type_specifier: ($) => choice($.standard_type, $.identifier),
