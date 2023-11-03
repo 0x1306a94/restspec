@@ -11,25 +11,22 @@
         {
           "type": "REPEAT",
           "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "import_declaration"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "option_declaration"
           }
         },
         {
           "type": "REPEAT",
           "content": {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "_declaration"
-              }
-            ]
+            "type": "SYMBOL",
+            "name": "import_declaration"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration"
           }
         }
       ]
@@ -38,8 +35,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "syntax"
+          "type": "SYMBOL",
+          "name": "syntax_keyword"
         },
         {
           "type": "STRING",
@@ -59,12 +56,50 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "import"
+          "type": "SYMBOL",
+          "name": "import_keyword"
         },
         {
           "type": "SYMBOL",
           "name": "string_literals"
+        },
+        {
+          "type": "STRING",
+          "value": ";"
+        }
+      ]
+    },
+    "option_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "option_keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "STRING",
+          "value": "="
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "string_literals"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "boolean_literal"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "integer_literal"
+            }
+          ]
         },
         {
           "type": "STRING",
@@ -225,6 +260,77 @@
         }
       ]
     },
+    "syntax_keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "syntax"
+      }
+    },
+    "import_keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "import"
+      }
+    },
+    "enum_keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "enum"
+      }
+    },
+    "enum_option_keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "enum_option"
+      }
+    },
+    "message_keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "message"
+      }
+    },
+    "option_keyword": {
+      "type": "TOKEN",
+      "content": {
+        "type": "STRING",
+        "value": "option"
+      }
+    },
+    "builtin_keyword": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "syntax_keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "import_keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "enum_keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "enum_option_keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "message_keyword"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "option_keyword"
+        }
+      ]
+    },
     "standard_type": {
       "type": "TOKEN",
       "content": {
@@ -323,8 +429,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "enum"
+          "type": "SYMBOL",
+          "name": "enum_keyword"
         },
         {
           "type": "SYMBOL",
@@ -385,8 +491,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "enum_option"
+          "type": "SYMBOL",
+          "name": "enum_option_keyword"
         },
         {
           "type": "SYMBOL",
@@ -456,8 +562,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "STRING",
-          "value": "message"
+          "type": "SYMBOL",
+          "name": "message_keyword"
         },
         {
           "type": "SYMBOL",

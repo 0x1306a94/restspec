@@ -1,5 +1,10 @@
 [
   {
+    "type": "boolean_literal",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "enum_case_declaration",
     "named": true,
     "fields": {},
@@ -28,6 +33,10 @@
       "types": [
         {
           "type": "enum_case_declaration",
+          "named": true
+        },
+        {
+          "type": "enum_keyword",
           "named": true
         },
         {
@@ -69,6 +78,10 @@
           "named": true
         },
         {
+          "type": "enum_option_keyword",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         }
@@ -80,9 +93,13 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "import_keyword",
+          "named": true
+        },
         {
           "type": "string_literals",
           "named": true
@@ -105,6 +122,10 @@
         {
           "type": "message_field",
           "named": true
+        },
+        {
+          "type": "message_keyword",
+          "named": true
         }
       ]
     }
@@ -123,6 +144,37 @@
         },
         {
           "type": "type_specifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "option_declaration",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "boolean_literal",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "integer_literal",
+          "named": true
+        },
+        {
+          "type": "option_keyword",
+          "named": true
+        },
+        {
+          "type": "string_literals",
           "named": true
         }
       ]
@@ -153,6 +205,10 @@
           "named": true
         },
         {
+          "type": "option_declaration",
+          "named": true
+        },
+        {
           "type": "syntax_declaration",
           "named": true
         }
@@ -167,7 +223,17 @@
   {
     "type": "syntax_declaration",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "syntax_keyword",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "type_specifier",
@@ -221,12 +287,12 @@
     "named": true
   },
   {
-    "type": "enum",
-    "named": false
+    "type": "enum_keyword",
+    "named": true
   },
   {
-    "type": "enum_option",
-    "named": false
+    "type": "enum_option_keyword",
+    "named": true
   },
   {
     "type": "false",
@@ -237,24 +303,28 @@
     "named": true
   },
   {
-    "type": "import",
-    "named": false
+    "type": "import_keyword",
+    "named": true
   },
   {
     "type": "integer_literal",
     "named": true
   },
   {
-    "type": "message",
-    "named": false
+    "type": "message_keyword",
+    "named": true
+  },
+  {
+    "type": "option_keyword",
+    "named": true
   },
   {
     "type": "standard_type",
     "named": true
   },
   {
-    "type": "syntax",
-    "named": false
+    "type": "syntax_keyword",
+    "named": true
   },
   {
     "type": "true",

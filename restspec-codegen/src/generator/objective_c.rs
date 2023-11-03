@@ -4,6 +4,9 @@ use tree_sitter::Node;
 use lazy_static::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
+
+use crate::option;
+
 enum AssociationPolicy {
     Assign,
     RetainNonAtomic,
@@ -109,14 +112,23 @@ impl ObjectiveCGenerator {
 }
 
 impl Generator for ObjectiveCGenerator {
-    fn generate_enum_code(&self, source_code: &str, node: &Node) -> Result<String, String> {
+    fn generate_enum_code(
+        &self,
+        source_code: &str,
+        node: &Node,
+        option_cache: &option::cache::Cache,
+    ) -> Result<String, String> {
         let enum_name = node
             .child(1)
             .expect("Failed to get child node")
             .utf8_text(source_code.as_bytes())
             .expect("fail text");
 
-        let mut generated_code = String::new(); //format!("enum {} {{\n", enum_name);
+        let enum_name = option_cache
+            .get(option::key::OBJECTIVE_C_PREFIX)
+            .map_or(enum_name.to_string(), |v| v.replace('"', "") + enum_name);
+
+        let mut generated_code = String::new();
         generated_code.push_str(&format!("#ifndef {}_h\n", enum_name));
         generated_code.push_str(&format!("#define {}_h\n\n", enum_name));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
@@ -138,10 +150,11 @@ impl Generator for ObjectiveCGenerator {
                             .expect("fail case value node")
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
-                        generated_code += &format!("\t{} = {};\n", case_name, case_value);
+                        generated_code +=
+                            &format!("\t{}{} = {};\n", enum_name, case_name, case_value);
                     }
                     _ => {
-                        generated_code += &format!("\t{} = 0;\n", case_name);
+                        generated_code += &format!("\t{}{} = 0;\n", enum_name, case_name);
                     }
                 }
             }
@@ -156,12 +169,21 @@ impl Generator for ObjectiveCGenerator {
         Ok(generated_code)
     }
 
-    fn generate_enum_options_code(&self, source_code: &str, node: &Node) -> Result<String, String> {
+    fn generate_enum_options_code(
+        &self,
+        source_code: &str,
+        node: &Node,
+        option_cache: &option::cache::Cache,
+    ) -> Result<String, String> {
         let enum_name = node
             .child(1)
             .expect("Failed to get child node")
             .utf8_text(source_code.as_bytes())
             .expect("fail text");
+
+        let enum_name = option_cache
+            .get(option::key::OBJECTIVE_C_PREFIX)
+            .map_or(enum_name.to_string(), |v| v.replace('"', "") + enum_name);
 
         let mut generated_code = String::new();
         generated_code.push_str(&format!("#ifndef {}_h\n", enum_name));
@@ -188,7 +210,8 @@ impl Generator for ObjectiveCGenerator {
                             .expect("fail case value node")
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
-                        generated_code += &format!("\t{} = {};\n", case_name, case_value);
+                        generated_code +=
+                            &format!("\t{}{} = {};\n", enum_name, case_name, case_value);
                     }
                     6 => {
                         let base_value = case_node
@@ -202,11 +225,13 @@ impl Generator for ObjectiveCGenerator {
                             .expect("fail case shift value node")
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
-                        generated_code +=
-                            &format!("\t{} = {} << {};\n", case_name, base_value, shift_value);
+                        generated_code += &format!(
+                            "\t{}{} = {} << {};\n",
+                            enum_name, case_name, base_value, shift_value
+                        );
                     }
                     _ => {
-                        generated_code += &format!("\t{} = 0;\n", case_name);
+                        generated_code += &format!("\t{}{} = 0;\n", enum_name, case_name);
                     }
                 }
             }
@@ -222,21 +247,35 @@ impl Generator for ObjectiveCGenerator {
         Ok(generated_code)
     }
 
-    fn generate_class_code(&self, source_code: &str, node: &Node) -> Result<String, String> {
+    fn generate_class_code(
+        &self,
+        source_code: &str,
+        node: &Node,
+        option_cache: &option::cache::Cache,
+    ) -> Result<String, String> {
         let class_name = node
             .child(1)
             .expect("Failed to get child node")
             .utf8_text(source_code.as_bytes())
             .expect("fail text");
 
+        let class_name = option_cache
+            .get(option::key::OBJECTIVE_C_PREFIX)
+            .map_or(class_name.to_string(), |v| v.replace('"', "") + class_name);
+
         let mut generated_code = String::new();
         generated_code.push_str(&format!("#ifndef {}_h\n", class_name));
         generated_code.push_str(&format!("#define {}_h\n\n", class_name));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
         generated_code.push_str("NS_ASSUME_NONNULL_BEGIN\n\n");
-        generated_code.push_str(&format!("@interface {} : NSObject\n", class_name));
+
+        let mut forward_declaration_code = String::new();
+
+        let mut interface_code = String::new();
 
         if node.child_count() >= 5 {
+            interface_code.push_str(&format!("@interface {} : NSObject\n", class_name));
+
             for idx in 3..(node.child_count() - 1) {
                 let field_node = node.child(idx).expect("fail get filed node");
 
@@ -269,7 +308,7 @@ impl Generator for ObjectiveCGenerator {
                             AssociationPolicy::Assign => " ",
                             _ => "",
                         };
-                        generated_code.push_str(&format!(
+                        interface_code.push_str(&format!(
                             "@property ({}{}) {}{}{};\n",
                             value.1.to_string(),
                             optional_code,
@@ -278,35 +317,49 @@ impl Generator for ObjectiveCGenerator {
                             field_name
                         ));
                     }
-                    None => match self.custom_type_map.borrow().get(type_name) {
-                        Some(value) => {
-                            let mut optional_code = String::new();
-                            if value.1 && optional {
-                                optional_code.push_str(" ,nullable");
+                    None => {
+                        let type_name = option_cache
+                            .get(option::key::OBJECTIVE_C_PREFIX)
+                            .map_or(type_name.to_string(), |v| v.replace('"', "") + type_name);
+                        match self.custom_type_map.borrow().get(&type_name) {
+                            Some(value) => {
+                                let mut optional_code = String::new();
+                                if value.1 && optional {
+                                    optional_code.push_str(" ,nullable");
+                                }
+
+                                let final_type = match value.0 {
+                                    AssociationPolicy::Assign => format!("{} ", type_name),
+                                    _ => {
+                                        forward_declaration_code
+                                            .push_str(&format!("@class {};\n", type_name));
+                                        format!("{} *", type_name)
+                                    }
+                                };
+
+                                interface_code.push_str(&format!(
+                                    "@property ({}{}) {}{};\n",
+                                    value.0.to_string(),
+                                    optional_code,
+                                    final_type,
+                                    field_name
+                                ));
                             }
-
-                            let final_type = match value.0 {
-                                AssociationPolicy::Assign => format!("{} ", type_name),
-                                _ => format!("{} *", type_name),
-                            };
-
-                            generated_code.push_str(&format!(
-                                "@property ({}{}) {}{};\n",
-                                value.0.to_string(),
-                                optional_code,
-                                final_type,
-                                field_name
-                            ));
+                            None => {
+                                panic!("Type {} not found", type_name);
+                            }
                         }
-                        None => {
-                            panic!("Type {} not found", type_name);
-                        }
-                    },
+                    }
                 }
             }
+
+            interface_code.push_str("@end\n");
         }
 
-        generated_code += "@end\n\nNS_ASSUME_NONNULL_END\n";
+        generated_code += &forward_declaration_code;
+        generated_code += &interface_code;
+
+        generated_code += "\nNS_ASSUME_NONNULL_END\n\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", class_name));
 
         self.custom_type_map.borrow_mut().insert(

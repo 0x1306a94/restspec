@@ -6,13 +6,24 @@ module.exports = grammar({
     source_file: ($) =>
       seq(
         $.syntax_declaration,
-        repeat(choice($.import_declaration)),
-        repeat(choice($._declaration))
+        repeat($.option_declaration),
+        repeat($.import_declaration),
+        repeat($._declaration)
       ),
     // syntax
-    syntax_declaration: ($) => seq("syntax", "=", '"restspec1"', ";"),
+    syntax_declaration: ($) => seq($.syntax_keyword, "=", '"restspec1"', ";"),
     // import
-    import_declaration: ($) => seq("import", $.string_literals, ";"),
+    import_declaration: ($) => seq($.import_keyword, $.string_literals, ";"),
+    // option
+    option_declaration: ($) =>
+      seq(
+        $.option_keyword,
+        $.identifier,
+        "=",
+        choice($.string_literals, $.boolean_literal, $.integer_literal),
+        ';'
+      ),
+
     // comment
     comment: ($) =>
       token(
@@ -53,6 +64,22 @@ module.exports = grammar({
         )
       ),
 
+    // keyword
+    syntax_keyword: ($) => token("syntax"),
+    import_keyword: ($) => token("import"),
+    enum_keyword: ($) => token("enum"),
+    enum_option_keyword: ($) => token("enum_option"),
+    message_keyword: ($) => token("message"),
+    option_keyword: ($) => token("option"),
+    builtin_keyword: ($) =>
+      choice(
+        $.syntax_keyword,
+        $.import_keyword,
+        $.enum_keyword,
+        $.enum_option_keyword,
+        $.message_keyword,
+        $.option_keyword
+      ),
     // standard type
     standard_type: ($) =>
       token(
@@ -79,13 +106,19 @@ module.exports = grammar({
 
     // enum
     enum_declaration: ($) =>
-      seq("enum", $.identifier, "{", repeat($.enum_case_declaration), "}"),
+      seq(
+        $.enum_keyword,
+        $.identifier,
+        "{",
+        repeat($.enum_case_declaration),
+        "}"
+      ),
     enum_case_declaration: ($) =>
       seq($.identifier, optional(seq("=", $.integer_literal)), ";"),
 
     enum_option_declaration: ($) =>
       seq(
-        "enum_option",
+        $.enum_option_keyword,
         $.identifier,
         "{",
         repeat($.enum_option_case_declaration),
@@ -104,7 +137,7 @@ module.exports = grammar({
 
     // message
     message_declaration: ($) =>
-      seq("message", $.identifier, "{", repeat($.message_field), "}"),
+      seq($.message_keyword, $.identifier, "{", repeat($.message_field), "}"),
     message_field: ($) =>
       seq(seq($.type_specifier, optional("?")), $.identifier, ";"),
   },
