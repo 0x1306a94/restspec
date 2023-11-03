@@ -3,24 +3,35 @@ syntax = "restspec1";
 option JavaPagckageName = "com.test.xx";
 option ObjectiveCPrefix = "KK";
 
-import "Basic";
+import "basic.restspec";
 
+/* DownloadSource */
 enum DownloadSource {
     None = 0;
     Apple = 0x2;
 }
 
+
 enum_option DownloadFlag {
+    // None
     None = 0;
+    /* Save */
     Save = 1 << 1;
 }
 
+/* 作者 */
 message Author {
+    /// basic
+    BasicObject? basic;
+    /* 作者名称 */
     String name;
     Map info;
+    Array members;
 }
 
+/* 下载器 */
 message Download {
+    /// 作者
     Author? author;
     DownloadSource source;
     DownloadFlag flag;

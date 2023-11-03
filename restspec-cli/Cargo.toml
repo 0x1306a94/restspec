@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 tree-sitter = "~0.20.10"
 restspec-codegen = { path = "../restspec-codegen" }
+clap = { version = "4.4.7", features = ["derive", "string"] }

@@ -1,0 +1,10 @@
+syntax = "restspec1";
+
+option JavaPagckageName = "com.test.xx";
+option ObjectiveCPrefix = "KK";
+
+/// BasicObject
+message BasicObject {
+    /// name
+    String name;
+}

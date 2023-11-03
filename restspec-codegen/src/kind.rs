@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 pub const SOURCE_FILE: &str = "source_file";
 pub const SYNTAX_DECLARATION: &str = "syntax_declaration";
 pub const SYNTAX: &str = "syntax";

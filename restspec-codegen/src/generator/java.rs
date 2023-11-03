@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 use super::generator::{GeneratedCode, Generator};
 use crate::option;
 use tree_sitter::Node;

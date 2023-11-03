@@ -1,11 +1,15 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use super::generator::{GeneratedCode, Generator};
 use tree_sitter::Node;
 
 use lazy_static::*;
-use std::cell::RefCell;
+use std::sync::Mutex;
+
 use std::collections::HashMap;
 
-use crate::option;
+use crate::{kind, option};
 
 enum AssociationPolicy {
     Assign,
@@ -28,6 +32,7 @@ impl ToString for AssociationPolicy {
 }
 
 struct PropertyInfo(String, AssociationPolicy, bool);
+struct CustomTypeInfo(AssociationPolicy, bool);
 
 const GENERATE_HEAD_CODE: &str = "
 //
@@ -114,19 +119,17 @@ lazy_static! {
         );
         map
     };
+    static ref CUSTOM_TYPE_MAP: Mutex<HashMap<String, CustomTypeInfo>> = {
+        let map = HashMap::new();
+        Mutex::new(map)
+    };
 }
 
-struct CustomTypeInfo(AssociationPolicy, bool);
-
-pub struct ObjectiveCGenerator {
-    custom_type_map: RefCell<HashMap<String, CustomTypeInfo>>,
-}
+pub struct ObjectiveCGenerator {}
 
 impl ObjectiveCGenerator {
     pub fn new() -> Self {
-        ObjectiveCGenerator {
-            custom_type_map: RefCell::new(HashMap::new()),
-        }
+        ObjectiveCGenerator {}
     }
 }
 
@@ -152,16 +155,35 @@ impl Generator for ObjectiveCGenerator {
         generated_code.push_str(&format!("#ifndef {}_h\n", enum_name));
         generated_code.push_str(&format!("#define {}_h\n\n", enum_name));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
+
+        match extract_comment(source_code, node) {
+            Some(comment) => {
+                generated_code.push_str(comment);
+                generated_code.push_str("\n");
+            }
+            _ => {}
+        }
         generated_code.push_str(&format!("typedef NS_ENUM(NSInteger, {}) {{\n", enum_name));
         if node.child_count() >= 5 {
             for idx in 3..(node.child_count() - 1) {
                 let case_node = node.child(idx).expect("fail case node");
-
+                if case_node.kind() == kind::COMMENT {
+                    continue;
+                }
                 let case_name = case_node
                     .child(0)
                     .expect("fail case name node")
                     .utf8_text(source_code.as_bytes())
                     .expect("fail get text");
+
+                match extract_comment(source_code, &case_node) {
+                    Some(comment) => {
+                        generated_code.push_str("\t");
+                        generated_code.push_str(comment);
+                        generated_code.push_str("\n");
+                    }
+                    _ => {}
+                }
 
                 match case_node.child_count() {
                     4 => {
@@ -171,10 +193,10 @@ impl Generator for ObjectiveCGenerator {
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
                         generated_code +=
-                            &format!("\t{}{} = {};\n", enum_name, case_name, case_value);
+                            &format!("\t{}{} = {},\n", enum_name, case_name, case_value);
                     }
                     _ => {
-                        generated_code += &format!("\t{}{} = 0;\n", enum_name, case_name);
+                        generated_code += &format!("\t{}{} = 0,\n", enum_name, case_name);
                     }
                 }
             }
@@ -182,7 +204,7 @@ impl Generator for ObjectiveCGenerator {
         generated_code += "};\n\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", enum_name));
 
-        self.custom_type_map.borrow_mut().insert(
+        CUSTOM_TYPE_MAP.lock().unwrap().insert(
             enum_name.to_string(),
             CustomTypeInfo(AssociationPolicy::Assign, false),
         );
@@ -213,6 +235,15 @@ impl Generator for ObjectiveCGenerator {
         generated_code.push_str(&format!("#ifndef {}_h\n", enum_name));
         generated_code.push_str(&format!("#define {}_h\n\n", enum_name));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
+
+        match extract_comment(source_code, node) {
+            Some(comment) => {
+                generated_code.push_str(comment);
+                generated_code.push_str("\n");
+            }
+            _ => {}
+        }
+
         generated_code.push_str(&format!(
             "typedef NS_OPTIONS(NSUInteger, {}) {{\n",
             enum_name
@@ -220,12 +251,23 @@ impl Generator for ObjectiveCGenerator {
         if node.child_count() >= 5 {
             for idx in 3..(node.child_count() - 1) {
                 let case_node = node.child(idx).expect("fail case node");
-
+                if case_node.kind() == kind::COMMENT {
+                    continue;
+                }
                 let case_name = case_node
                     .child(0)
                     .expect("fail case name node")
                     .utf8_text(source_code.as_bytes())
                     .expect("fail get text");
+
+                match extract_comment(source_code, &case_node) {
+                    Some(comment) => {
+                        generated_code.push_str("\t");
+                        generated_code.push_str(comment);
+                        generated_code.push_str("\n");
+                    }
+                    _ => {}
+                }
 
                 match case_node.child_count() {
                     4 => {
@@ -235,7 +277,7 @@ impl Generator for ObjectiveCGenerator {
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
                         generated_code +=
-                            &format!("\t{}{} = {};\n", enum_name, case_name, case_value);
+                            &format!("\t{}{} = {},\n", enum_name, case_name, case_value);
                     }
                     6 => {
                         let base_value = case_node
@@ -250,12 +292,12 @@ impl Generator for ObjectiveCGenerator {
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
                         generated_code += &format!(
-                            "\t{}{} = {} << {};\n",
+                            "\t{}{} = {} << {},\n",
                             enum_name, case_name, base_value, shift_value
                         );
                     }
                     _ => {
-                        generated_code += &format!("\t{}{} = 0;\n", enum_name, case_name);
+                        generated_code += &format!("\t{}{} = 0,\n", enum_name, case_name);
                     }
                 }
             }
@@ -263,7 +305,7 @@ impl Generator for ObjectiveCGenerator {
         generated_code += "};\n\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", enum_name));
 
-        self.custom_type_map.borrow_mut().insert(
+        CUSTOM_TYPE_MAP.lock().unwrap().insert(
             enum_name.to_string(),
             CustomTypeInfo(AssociationPolicy::Assign, false),
         );
@@ -295,17 +337,26 @@ impl Generator for ObjectiveCGenerator {
         generated_code.push_str(&format!("#ifndef {}_h\n", class_name));
         generated_code.push_str(&format!("#define {}_h\n\n", class_name));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
-        generated_code.push_str("NS_ASSUME_NONNULL_BEGIN\n\n");
 
         let mut forward_declaration_code = String::new();
 
         let mut interface_code = String::new();
 
         if node.child_count() >= 5 {
+            match extract_comment(source_code, node) {
+                Some(comment) => {
+                    interface_code.push_str(comment);
+                    interface_code.push_str("\n");
+                }
+                _ => {}
+            }
             interface_code.push_str(&format!("@interface {} : NSObject\n", class_name));
 
             for idx in 3..(node.child_count() - 1) {
                 let field_node = node.child(idx).expect("fail get filed node");
+                if field_node.kind() == kind::COMMENT {
+                    continue;
+                }
 
                 let type_idx: usize = 0;
                 let name_idx: usize = match field_node.child_count() {
@@ -325,6 +376,14 @@ impl Generator for ObjectiveCGenerator {
                     .expect("fail type node")
                     .utf8_text(source_code.as_bytes())
                     .expect("text");
+
+                match extract_comment(source_code, &field_node) {
+                    Some(comment) => {
+                        interface_code.push_str(comment);
+                        interface_code.push_str("\n");
+                    }
+                    _ => {}
+                }
 
                 match (*STANDARD_TYPE_MAP).get(type_name) {
                     Some(value) => {
@@ -348,7 +407,7 @@ impl Generator for ObjectiveCGenerator {
                         let type_name = option_cache
                             .get(option::key::OBJECTIVE_C_PREFIX)
                             .map_or(type_name.to_string(), |v| v.replace('"', "") + type_name);
-                        match self.custom_type_map.borrow().get(&type_name) {
+                        match CUSTOM_TYPE_MAP.lock().unwrap().get(&type_name) {
                             Some(value) => {
                                 let mut optional_code = String::new();
                                 if value.1 && optional {
@@ -356,7 +415,11 @@ impl Generator for ObjectiveCGenerator {
                                 }
 
                                 let final_type = match value.0 {
-                                    AssociationPolicy::Assign => format!("{} ", type_name),
+                                    AssociationPolicy::Assign => {
+                                        generated_code
+                                            .push_str(&format!("#import \"{}.h\"\n", type_name));
+                                        format!("{} ", type_name)
+                                    }
                                     _ => {
                                         forward_declaration_code
                                             .push_str(&format!("@class {};\n", type_name));
@@ -383,20 +446,42 @@ impl Generator for ObjectiveCGenerator {
             interface_code.push_str("@end\n");
         }
 
-        generated_code += &forward_declaration_code;
+        generated_code.push_str("NS_ASSUME_NONNULL_BEGIN\n\n");
+
+        if !forward_declaration_code.is_empty() {
+            generated_code += &forward_declaration_code;
+            generated_code += "\n";
+        }
         generated_code += &interface_code;
 
         generated_code += "\nNS_ASSUME_NONNULL_END\n\n";
         generated_code.push_str(&format!("#endif /* {}_h */\n", class_name));
 
-        self.custom_type_map.borrow_mut().insert(
+        CUSTOM_TYPE_MAP.lock().unwrap().insert(
             class_name.to_string(),
             CustomTypeInfo(AssociationPolicy::RetainNonAtomic, true),
         );
 
-        Ok(vec![GeneratedCode::new(
-            &format!("{}.h", class_name),
-            &generated_code,
-        )])
+        let mut implementation_code = String::new();
+        implementation_code.push_str(GENERATE_HEAD_CODE);
+        implementation_code.push_str(&format!("#import \"{}.h\"\n\n", class_name));
+        implementation_code.push_str(&format!("@implementation {}\n\n", class_name));
+        implementation_code.push_str("@end\n\n");
+        Ok(vec![
+            GeneratedCode::new(&format!("{}.h", class_name), &generated_code),
+            GeneratedCode::new(&format!("{}.m", class_name), &implementation_code),
+        ])
+    }
+}
+
+fn extract_comment<'a>(source_code: &'a str, node: &Node) -> Option<&'a str> {
+    let sibling = node.prev_sibling()?;
+    if sibling.kind() != kind::COMMENT {
+        return None;
+    }
+
+    match sibling.utf8_text(source_code.as_bytes()) {
+        Ok(comment) => Some(comment),
+        _ => None,
     }
 }
