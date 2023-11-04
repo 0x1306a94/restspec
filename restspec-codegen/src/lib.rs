@@ -1,9 +1,12 @@
+use std::collections::HashSet;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use generator::generator::GeneratedCode;
+use lazy_static::*;
 use tree_sitter::{Node, Parser};
 
 pub mod kind;
@@ -14,11 +17,20 @@ pub mod generator;
 pub use generator::{Generator, JavaGenerator, ObjectiveCGenerator};
 
 mod option;
+
+lazy_static! {
+    static ref IMPORT_PROCESSED_SET: Mutex<HashSet<String>> = {
+        let set = HashSet::new();
+        Mutex::new(set)
+    };
+}
+
 pub fn generate_code(
     source_code: &str,
     language: &Language,
     include_dir: &PathBuf,
     output_dir: &PathBuf,
+    current_file_path: &PathBuf,
 ) {
     let mut parser = Parser::new();
     parser
@@ -32,7 +44,11 @@ pub fn generate_code(
         eprintln!("The syntax declaration is missing from the source file");
         return;
     }
-    println!("{}", tree.root_node().to_sexp());
+    println!(
+        "\nfile:{}\nsexp:\n{}\n\n",
+        current_file_path.to_str().unwrap(),
+        tree.root_node().to_sexp()
+    );
 
     let option_cache = option::cache::Cache::new();
 
@@ -48,6 +64,7 @@ pub fn generate_code(
         &option_cache,
         include_dir,
         output_dir,
+        current_file_path,
     );
 }
 
@@ -59,6 +76,7 @@ fn visit_node(
     option_cache: &option::cache::Cache,
     include_dir: &PathBuf,
     output_dir: &PathBuf,
+    current_file_path: &PathBuf,
 ) {
     match node.kind() {
         kind::OPTION_DECLARATION => {
@@ -85,13 +103,25 @@ fn visit_node(
                 .replace('"', "");
 
             let path = include_dir.clone().join(path);
+
+            if current_file_path == &path {
+                panic!("Import into oneself")
+            }
             if !path.exists() {
                 panic!("{:?} not exists", &path);
             }
-            println!("import path: {:?}", &path);
-            let source_code =
-                fs::read_to_string(&path).expect(&format!("read source code fail: {:?}", &path));
-            generate_code(&source_code, language, include_dir, output_dir);
+            let path_str = path.as_path().to_str().unwrap();
+            let mut processed_set = IMPORT_PROCESSED_SET.lock().unwrap();
+            if !processed_set.contains(path_str) {
+                println!("import path: {path_str}");
+                let source_code = fs::read_to_string(&path)
+                    .expect(&format!("read source code fail: {:?}", &path));
+                generate_code(&source_code, language, include_dir, output_dir, &path);
+                // 标记已处理过
+                processed_set.insert(path_str.to_owned());
+            } else {
+                println!("import path skip: {path_str}");
+            }
         }
         kind::ENUM_DECLARATION => {
             let codes = generator
@@ -133,6 +163,7 @@ fn visit_node(
             option_cache,
             include_dir,
             output_dir,
+            current_file_path,
         );
     }
 }

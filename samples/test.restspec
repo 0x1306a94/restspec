@@ -4,6 +4,7 @@ option JavaPagckageName = "com.test.xx";
 option ObjectiveCPrefix = "KK";
 
 import "basic.restspec";
+import "basic.restspec";
 
 /* DownloadSource */
 enum DownloadSource {

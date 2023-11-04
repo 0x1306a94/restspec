@@ -54,6 +54,12 @@ fn main() {
     for entry in &cli.files {
         let source_code =
             fs::read_to_string(&entry).expect(&format!("read source code fail: {:?}", &entry));
-        restspec_codegen::generate_code(&source_code, &gen_language, &include_dir, &output_dir);
+        restspec_codegen::generate_code(
+            &source_code,
+            &gen_language,
+            &include_dir,
+            &output_dir,
+            entry,
+        );
     }
 }

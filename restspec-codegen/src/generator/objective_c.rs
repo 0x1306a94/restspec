@@ -5,9 +5,8 @@ use super::generator::{GeneratedCode, Generator};
 use tree_sitter::Node;
 
 use lazy_static::*;
-use std::sync::Mutex;
-
 use std::collections::HashMap;
+use std::sync::Mutex;
 
 use crate::{kind, option};
 
