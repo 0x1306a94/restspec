@@ -152,8 +152,8 @@ impl Generator for ObjectiveCGenerator {
 
         let mut generated_code = String::new();
         generated_code.push_str(GENERATE_HEAD_CODE);
-        generated_code.push_str(&format!("#ifndef {}_h\n", enum_name));
-        generated_code.push_str(&format!("#define {}_h\n\n", enum_name));
+        generated_code.push_str(&format!("#ifndef {enum_name}_h\n"));
+        generated_code.push_str(&format!("#define {enum_name}_h\n\n"));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
 
         match extract_comment(source_code, node) {
@@ -163,7 +163,7 @@ impl Generator for ObjectiveCGenerator {
             }
             _ => {}
         }
-        generated_code.push_str(&format!("typedef NS_ENUM(NSInteger, {}) {{\n", enum_name));
+        generated_code.push_str(&format!("typedef NS_ENUM(NSInteger, {enum_name}) {{\n"));
         if node.child_count() >= 5 {
             for idx in 3..(node.child_count() - 1) {
                 let case_node = node.child(idx).expect("fail case node");
@@ -192,24 +192,23 @@ impl Generator for ObjectiveCGenerator {
                             .expect("fail case value node")
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
-                        generated_code +=
-                            &format!("\t{}{} = {},\n", enum_name, case_name, case_value);
+                        generated_code += &format!("\t{enum_name}{case_name} = {case_value},\n");
                     }
                     _ => {
-                        generated_code += &format!("\t{}{} = 0,\n", enum_name, case_name);
+                        generated_code += &format!("\t{enum_name}{case_name} = 0,\n");
                     }
                 }
             }
         }
         generated_code += "};\n\n";
-        generated_code.push_str(&format!("#endif /* {}_h */\n", enum_name));
+        generated_code.push_str(&format!("#endif /* {enum_name}_h */\n"));
 
         CUSTOM_TYPE_MAP.lock().unwrap().insert(
             enum_name.to_string(),
             CustomTypeInfo(AssociationPolicy::Assign, false),
         );
         Ok(vec![GeneratedCode::new(
-            &format!("{}.h", enum_name),
+            &format!("{enum_name}.h"),
             &generated_code,
         )])
     }
@@ -232,8 +231,8 @@ impl Generator for ObjectiveCGenerator {
 
         let mut generated_code = String::new();
         generated_code.push_str(GENERATE_HEAD_CODE);
-        generated_code.push_str(&format!("#ifndef {}_h\n", enum_name));
-        generated_code.push_str(&format!("#define {}_h\n\n", enum_name));
+        generated_code.push_str(&format!("#ifndef {enum_name}_h\n"));
+        generated_code.push_str(&format!("#define {enum_name}_h\n\n"));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
 
         match extract_comment(source_code, node) {
@@ -276,8 +275,7 @@ impl Generator for ObjectiveCGenerator {
                             .expect("fail case value node")
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
-                        generated_code +=
-                            &format!("\t{}{} = {},\n", enum_name, case_name, case_value);
+                        generated_code += &format!("\t{enum_name}{case_name} = {case_value},\n");
                     }
                     6 => {
                         let base_value = case_node
@@ -291,19 +289,17 @@ impl Generator for ObjectiveCGenerator {
                             .expect("fail case shift value node")
                             .utf8_text(source_code.as_bytes())
                             .expect("fail get text");
-                        generated_code += &format!(
-                            "\t{}{} = {} << {},\n",
-                            enum_name, case_name, base_value, shift_value
-                        );
+                        generated_code +=
+                            &format!("\t{enum_name}{case_name} = {base_value} << {shift_value},\n");
                     }
                     _ => {
-                        generated_code += &format!("\t{}{} = 0,\n", enum_name, case_name);
+                        generated_code += &format!("\t{enum_name}{case_name} = 0,\n");
                     }
                 }
             }
         }
         generated_code += "};\n\n";
-        generated_code.push_str(&format!("#endif /* {}_h */\n", enum_name));
+        generated_code.push_str(&format!("#endif /* {enum_name}_h */\n"));
 
         CUSTOM_TYPE_MAP.lock().unwrap().insert(
             enum_name.to_string(),
@@ -311,7 +307,7 @@ impl Generator for ObjectiveCGenerator {
         );
 
         Ok(vec![GeneratedCode::new(
-            &format!("{}.h", enum_name),
+            &format!("{enum_name}.h"),
             &generated_code,
         )])
     }
@@ -334,8 +330,8 @@ impl Generator for ObjectiveCGenerator {
 
         let mut generated_code = String::new();
         generated_code.push_str(GENERATE_HEAD_CODE);
-        generated_code.push_str(&format!("#ifndef {}_h\n", class_name));
-        generated_code.push_str(&format!("#define {}_h\n\n", class_name));
+        generated_code.push_str(&format!("#ifndef {class_name}_h\n"));
+        generated_code.push_str(&format!("#define {class_name}_h\n\n"));
         generated_code.push_str("#import <Foundation/Foundation.h>\n\n");
 
         let mut forward_declaration_code = String::new();
@@ -350,7 +346,8 @@ impl Generator for ObjectiveCGenerator {
                 }
                 _ => {}
             }
-            interface_code.push_str(&format!("@interface {} : NSObject\n", class_name));
+            let super_class_name = "NSObject";
+            interface_code.push_str(&format!("@interface {class_name} : {super_class_name}\n"));
 
             for idx in 3..(node.child_count() - 1) {
                 let field_node = node.child(idx).expect("fail get filed node");
@@ -396,11 +393,8 @@ impl Generator for ObjectiveCGenerator {
                             _ => format!("{} *", value.0),
                         };
                         interface_code.push_str(&format!(
-                            "@property ({}{}) {}{};\n",
-                            value.1.to_string(),
-                            optional_code,
-                            type_name,
-                            field_name
+                            "@property ({}{optional_code}) {type_name}{field_name};\n",
+                            value.1.to_string()
                         ));
                     }
                     None => {
@@ -417,26 +411,23 @@ impl Generator for ObjectiveCGenerator {
                                 let final_type = match value.0 {
                                     AssociationPolicy::Assign => {
                                         generated_code
-                                            .push_str(&format!("#import \"{}.h\"\n", type_name));
-                                        format!("{} ", type_name)
+                                            .push_str(&format!("#import \"{type_name}.h\"\n"));
+                                        format!("{type_name} ")
                                     }
                                     _ => {
                                         forward_declaration_code
-                                            .push_str(&format!("@class {};\n", type_name));
-                                        format!("{} *", type_name)
+                                            .push_str(&format!("@class {type_name};\n"));
+                                        format!("{type_name} *")
                                     }
                                 };
 
                                 interface_code.push_str(&format!(
-                                    "@property ({}{}) {}{};\n",
-                                    value.0.to_string(),
-                                    optional_code,
-                                    final_type,
-                                    field_name
+                                    "@property ({}{optional_code}) {final_type}{field_name};\n",
+                                    value.0.to_string()
                                 ));
                             }
                             None => {
-                                panic!("Type {} not found", type_name);
+                                panic!("Type {type_name} not found");
                             }
                         }
                     }
@@ -446,7 +437,7 @@ impl Generator for ObjectiveCGenerator {
             interface_code.push_str("@end\n");
         }
 
-        generated_code.push_str("NS_ASSUME_NONNULL_BEGIN\n\n");
+        generated_code.push_str("\nNS_ASSUME_NONNULL_BEGIN\n\n");
 
         if !forward_declaration_code.is_empty() {
             generated_code += &forward_declaration_code;
