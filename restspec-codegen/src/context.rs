@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
 
@@ -73,19 +73,61 @@ impl Context {
     }
 
     fn codegen(&self) {
-        match self.dg.borrow().topological_sort() {
-            Some(ref orders) => {
-                for file in orders {
-                    println!("Processing file: {}", file);
-                    if let Some(value) = self.tree_map.borrow().get(file) {
-                        let option_cache = option::cache::Cache::new();
-                        self.visit_node(&value.0, &value.1.root_node(), &option_cache);
-                    }
-                }
-            }
+        let topological_sort = match self.dg.borrow().topological_sort() {
+            Some(orders) => orders,
             _ => {
                 panic!("存在循环依赖,请检查代码")
             }
+        };
+
+        let coiped: Vec<PathBuf> = self.files.iter().map(|p| util::absolute_path(p)).collect();
+        let coiped = coiped.iter().map(|p: &PathBuf| p.to_str().unwrap());
+        let mut processed: HashSet<&str> = HashSet::from_iter(coiped);
+
+        // 优先根据依赖顺序处理
+        for file in &topological_sort {
+            println!("Processing dependency file: {}", file);
+            let option_cache = option::cache::Cache::new();
+            if let Some(value) = self.tree_map.borrow().get(file) {
+                // println!("root_node: \n{}\n", &value.1.root_node().to_sexp());
+                self.visit_node(&value.0, &value.1.root_node(), &option_cache);
+            } else {
+                let source_code =
+                    fs::read_to_string(file).expect(&format!("read source code fail: {file}"));
+                let tree = self
+                    .parser
+                    .borrow_mut()
+                    .parse(&source_code, None)
+                    .expect("Error parsing source code");
+                let root_node = tree.root_node();
+                if root_node.kind() != kind::SOURCE_FILE {
+                    eprintln!("The syntax declaration is missing from the source file");
+                    return;
+                }
+                // println!("root_node: \n{}\n", &root_node.to_sexp());
+                self.visit_node(&source_code, &root_node, &option_cache);
+            }
+            processed.remove(file.as_str());
+        }
+
+        // 处理剩下无依赖顺序的
+        for file in processed {
+            println!("Processing file: {}", file);
+            let option_cache = option::cache::Cache::new();
+            let source_code =
+                fs::read_to_string(file).expect(&format!("read source code fail: {file}"));
+            let tree = self
+                .parser
+                .borrow_mut()
+                .parse(&source_code, None)
+                .expect("Error parsing source code");
+            let root_node = tree.root_node();
+            if root_node.kind() != kind::SOURCE_FILE {
+                eprintln!("The syntax declaration is missing from the source file");
+                return;
+            }
+            // println!("root_node: \n{}\n", &root_node.to_sexp());
+            self.visit_node(&source_code, &root_node, &option_cache);
         }
     }
 
