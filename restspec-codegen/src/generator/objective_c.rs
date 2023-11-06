@@ -445,7 +445,7 @@ impl Generator for ObjectiveCGenerator {
         generated_code += &interface_code;
 
         generated_code += "\nNS_ASSUME_NONNULL_END\n\n";
-        generated_code.push_str(&format!("#endif /* {}_h */\n", class_name));
+        generated_code.push_str(&format!("#endif /* {class_name}_h */\n"));
 
         CUSTOM_TYPE_MAP.lock().unwrap().insert(
             class_name.to_string(),
@@ -454,12 +454,12 @@ impl Generator for ObjectiveCGenerator {
 
         let mut implementation_code = String::new();
         implementation_code.push_str(GENERATE_HEAD_CODE);
-        implementation_code.push_str(&format!("#import \"{}.h\"\n\n", class_name));
-        implementation_code.push_str(&format!("@implementation {}\n\n", class_name));
+        implementation_code.push_str(&format!("#import \"{class_name}.h\"\n\n"));
+        implementation_code.push_str(&format!("@implementation {class_name}\n\n"));
         implementation_code.push_str("@end\n\n");
         Ok(vec![
-            GeneratedCode::new(&format!("{}.h", class_name), &generated_code),
-            GeneratedCode::new(&format!("{}.m", class_name), &implementation_code),
+            GeneratedCode::new(&format!("{class_name}.h"), &generated_code),
+            GeneratedCode::new(&format!("{class_name}.m"), &implementation_code),
         ])
     }
 }
