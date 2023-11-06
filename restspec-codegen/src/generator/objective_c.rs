@@ -124,10 +124,10 @@ lazy_static! {
     };
 }
 
-pub struct ObjectiveCGenerator {}
+pub(crate) struct ObjectiveCGenerator {}
 
 impl ObjectiveCGenerator {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         ObjectiveCGenerator {}
     }
 }
@@ -436,7 +436,7 @@ impl Generator for ObjectiveCGenerator {
             interface_code.push_str("@end\n");
         }
 
-        generated_code.push_str("\nNS_ASSUME_NONNULL_BEGIN\n\n");
+        generated_code.push_str("NS_ASSUME_NONNULL_BEGIN\n\n");
 
         if !forward_declaration_code.is_empty() {
             generated_code += &forward_declaration_code;

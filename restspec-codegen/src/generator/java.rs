@@ -4,7 +4,7 @@ use super::generator::{GeneratedCode, Generator};
 use crate::option;
 use tree_sitter::Node;
 
-pub struct JavaGenerator {}
+pub(crate) struct JavaGenerator {}
 
 impl JavaGenerator {
     pub fn new() -> Self {

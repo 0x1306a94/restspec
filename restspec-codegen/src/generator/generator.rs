@@ -2,29 +2,29 @@ use tree_sitter::Node;
 
 use crate::option;
 
-pub struct GeneratedCode {
+pub(crate) struct GeneratedCode {
     name: String,
     code: String,
 }
 
 impl GeneratedCode {
-    pub fn new(name: &str, code: &str) -> Self {
+    pub(crate) fn new(name: &str, code: &str) -> Self {
         GeneratedCode {
             name: name.to_owned(),
             code: code.to_string(),
         }
     }
 
-    pub fn get_name(&self) -> String {
+    pub(crate) fn get_name(&self) -> String {
         self.name.clone()
     }
 
-    pub fn get_code(&self) -> String {
+    pub(crate) fn get_code(&self) -> String {
         self.code.clone()
     }
 }
 
-pub trait Generator {
+pub(crate) trait Generator {
     fn generate_enum_code(
         &self,
         source_code: &str,

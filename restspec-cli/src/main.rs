@@ -51,15 +51,7 @@ fn main() {
         Language::Java => restspec_codegen::language::Language::Java,
     };
 
-    for entry in &cli.files {
-        let source_code =
-            fs::read_to_string(&entry).expect(&format!("read source code fail: {:?}", &entry));
-        restspec_codegen::generate_code(
-            &source_code,
-            &gen_language,
-            &include_dir,
-            &output_dir,
-            entry,
-        );
-    }
+    let ctx =
+        restspec_codegen::Context::new(gen_language, (&cli.files).clone(), include_dir, output_dir);
+    ctx.gen_code();
 }

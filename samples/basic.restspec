@@ -3,6 +3,8 @@ syntax = "restspec1";
 option JavaPagckageName = "com.test.xx";
 option ObjectiveCPrefix = "KK";
 
+//import "test.restspec";
+
 /// BasicObject
 message BasicObject {
     /// name
