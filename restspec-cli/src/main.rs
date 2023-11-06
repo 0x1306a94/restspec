@@ -1,7 +1,8 @@
-use clap::{Parser, ValueEnum};
-use restspec_codegen;
-use std::fs;
 use std::{env, path::Path, path::PathBuf};
+
+use restspec_codegen;
+
+use clap::{Parser, ValueEnum};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
